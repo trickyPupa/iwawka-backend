@@ -1,0 +1,24 @@
+.idea/
+.gradle/
+
+# Gradle build outputs
+build/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IntelliJ IDEA / JetBrains project files
+*.iml
+*.ipr
+*.iws
+out/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+.env

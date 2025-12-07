@@ -1,0 +1,68 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: redis
+    command: ["redis-server", "--save", "20", "1", "--loglevel", "warning"]
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redisdata:/data
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    container_name: clickhouse
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ports:
+      - "${CLICKHOUSE_HTTP_PORT:-8123}:8123"
+      - "${CLICKHOUSE_NATIVE_PORT:-9000}:9000"
+    volumes:
+      - chdata:/var/lib/clickhouse
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: iwawka-app
+    depends_on:
+      - postgres
+      - redis
+      - clickhouse
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    environment:
+      DATABASE_POSTGRES_URL: jdbc:postgresql://postgres:${POSTGRES_PORT}/${POSTGRES_DB}
+      DATABASE_POSTGRES_USER: ${POSTGRES_USER}
+      DATABASE_POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DATABASE_REDIS_HOST: ${REDIS_HOST}
+      DATABASE_REDIS_PORT: ${REDIS_PORT}
+      DATABASE_CLICKHOUSE_URL: jdbc:clickhouse://clickhouse:${CLICKHOUSE_PORT}/${CLICKHOUSE_DB}
+      DATABASE_CLICKHOUSE_USER: ${CLICKHOUSE_USER}
+      DATABASE_CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      SERVER_HOST: ${APP_HOST}
+      SERVER_PORT: ${APP_PORT}
+      FLYWAY_ENABLED: true
+
+volumes:
+  pgdata:
+  redisdata:
+  chdata:
+
