@@ -1,4 +1,4 @@
-package config
+package org.itmo.config
 
 import com.typesafe.config.ConfigFactory
 

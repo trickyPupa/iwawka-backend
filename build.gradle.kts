@@ -28,10 +28,18 @@ dependencies {
     implementation("io.ktor:ktor-server-content-negotiation")
     implementation("io.ktor:ktor-serialization-jackson")
     implementation("io.ktor:ktor-server-status-pages")
+
+    implementation("io.ktor:ktor-server-openapi")
+    implementation("io.ktor:ktor-server-swagger")
+    implementation("io.ktor:ktor-server-swagger-ui")
+
+    implementation("com.typesafe:config")
+
     implementation("org.postgresql:postgresql:42.7.8")
     implementation("redis.clients:jedis:7.1.0")
     implementation("com.clickhouse:clickhouse-client:0.9.4")
-    implementation("com.typesafe:config")
     implementation("org.flywaydb:flyway-core:10.15.0")
+    implementation("org.flywaydb:flyway-database-postgresql:10.15.0")
+
     testImplementation("org.jetbrains.kotlin:kotlin-test")
 }

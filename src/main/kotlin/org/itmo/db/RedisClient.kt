@@ -1,6 +1,5 @@
-package db
+package org.itmo.db
 
-import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
 
 class RedisClient(private val host: String, private val port: Int) {
