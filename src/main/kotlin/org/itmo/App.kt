@@ -20,6 +20,7 @@ import org.itmo.config.Config
 import org.itmo.config.JwtConfig
 import org.itmo.api.configureRouting
 import org.itmo.api.controllers.*
+import org.itmo.api.plugins.configureRequestLogging
 import org.itmo.repository.*
 import org.itmo.service.*
 import org.itmo.db.*
@@ -27,6 +28,15 @@ import org.itmo.db.*
 fun main() {
     if (Config.flywayEnabled) {
         runMigrations()
+    }
+
+    // Инициализация таблиц ClickHouse
+    try {
+        println("=== Initializing ClickHouse ===")
+        ClickHouseConnection.initializeTables()
+    } catch (e: Exception) {
+        println("⚠️ Warning: Failed to initialize ClickHouse tables: ${e.message}")
+        println("Application will continue, but logging to ClickHouse may not work")
     }
 
     embeddedServer(Netty, port = Config.serverPort, host = Config.serverHost) {
@@ -251,11 +261,6 @@ fun Application.module() {
         user = Config.postgresUser,
         password = Config.postgresPassword
     )
-    val clickHouseClient = ClickHouseClient(
-        url = Config.clickhouseUrl,
-        user = Config.clickhouseUser,
-        password = Config.clickhousePassword
-    )
 
     val messageRepository = MessageRepository(postgresClient)
     val userRepository = UserRepository(postgresClient)
@@ -266,8 +271,8 @@ fun Application.module() {
     val messageService = MessageService(messageRepository)
     val authService = AuthService(userRepository, tokenRepository)
     val tokenCleanupService = TokenCleanupService(tokenRepository)
+    val auditLogService = AuditLogService()
 
-    // автоматическая очистка истёкших токенов
     tokenCleanupService.startCleanup(intervalHours = 24)
 
     val messageController = MessageController(messageService)
@@ -276,5 +281,7 @@ fun Application.module() {
     val imageController = ImageController(imageRepository)
     val authController = AuthController(authService)
 
-    configureRouting(messageController, chatController, userController, imageController, authController)
+    configureRequestLogging(auditLogService)
+
+    configureRouting(messageController, chatController, userController, imageController, authController, auditLogService)
 }

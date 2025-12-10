@@ -45,14 +45,14 @@ fun ApplicationCall.getPrincipalUserId(): Long? {
 }
 
 fun ApplicationCall.requirePrincipalUserId(): Long {
-    return getPrincipalUserId()
+    return getPrincipalUserId() 
         ?: throw IllegalStateException("User ID not found in JWT token")
 }
 
 suspend fun ApplicationCall.requireAuth(userRepository: UserRepository): User {
     val userId = getPrincipalUserId()
         ?: throw IllegalArgumentException("Unauthorized")
-
+    
     return userRepository.getUserById(userId)
         ?: throw IllegalArgumentException("User not found")
 }

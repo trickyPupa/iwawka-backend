@@ -5,13 +5,15 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.itmo.api.controllers.*
 import org.itmo.api.routes.*
+import org.itmo.service.AuditLogService
 
 fun Application.configureRouting(
     messageController: MessageController,
     chatController: ChatController,
     userController: UserController,
     imageController: ImageController,
-    authController: AuthController
+    authController: AuthController,
+    auditLogService: AuditLogService
 ) {
     routing {
         get("/") {
@@ -27,11 +29,12 @@ fun Application.configureRouting(
         }
 
         route("/api") {
-            authRoutes(authController)
+            authRoutes(authController, auditLogService)
             messageRoutes(messageController)
             chatRoutes(chatController)
             userRoutes(userController)
             imageRoutes(imageController)
+            auditLogRoutes(auditLogService)
         }
     }
 }
