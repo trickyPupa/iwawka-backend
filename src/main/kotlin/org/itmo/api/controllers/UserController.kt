@@ -3,6 +3,7 @@ package org.itmo.api.controllers
 import org.itmo.api.request.UserUpdateRequest
 import org.itmo.model.Image
 import org.itmo.model.User
+import org.itmo.model.UserShow
 import org.itmo.repository.ImageRepository
 import org.itmo.repository.UserRepository
 
@@ -21,7 +22,7 @@ class UserController(
     /**
      * Получает всех пользователей
      */
-    fun getAllUsers(): List<User> {
+    fun getAllUsers(): List<UserShow> {
         return userRepository.getAllUsers()
     }
 
@@ -70,12 +71,5 @@ class UserController(
      */
     fun updateUser(userId: Long, request: UserUpdateRequest): Boolean {
         return userRepository.updateProfile(userId, request.bio, request.status, request.name, request.email)
-    }
-
-    /**
-     * Создает нового пользователя
-     */
-    fun createUser(username: String, email: String): Long {
-        return userRepository.createUser(username, email)
     }
 }

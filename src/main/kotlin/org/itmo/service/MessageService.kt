@@ -5,8 +5,8 @@ import org.itmo.repository.MessageRepository
 
 class MessageService(private val resource: MessageRepository) {
 
-    fun sendMessage(text: String, chat: Long): Boolean{
-        return resource.createMessage(text, chat, 1) > 0
+    fun sendMessage(text: String, chat: Long, userId: Long): Boolean{
+        return resource.createMessage(text, chat, userId) > 0
     }
 
     fun deleteMessage(messageId: Long): Boolean {

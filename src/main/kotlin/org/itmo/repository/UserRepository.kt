@@ -2,6 +2,7 @@ package org.itmo.repository
 
 import org.itmo.db.PostgresClient
 import org.itmo.model.User
+import org.itmo.model.UserShow
 import java.sql.Timestamp
 import java.time.Instant
 
@@ -14,7 +15,7 @@ class UserRepository(private val postgresClient: PostgresClient) {
         val connection = postgresClient.getConnection()
         try {
             val sql = """
-                SELECT id, username, email, status, bio, image_id, created_at
+                SELECT id, username, email, status, bio, image_id, password_hash, last_login_at, created_at
                 FROM users
                 WHERE id = ?
             """.trimIndent()
@@ -31,6 +32,8 @@ class UserRepository(private val postgresClient: PostgresClient) {
                         status = resultSet.getInt("status"),
                         bio = resultSet.getString("bio"),
                         imageId = resultSet.getObject("image_id") as Long?,
+                        passwordHash = resultSet.getString("password_hash"),
+                        lastLoginAt = resultSet.getTimestamp("last_login_at")?.toInstant(),
                         createdAt = resultSet.getTimestamp("created_at").toInstant()
                     )
                 } else {
@@ -96,13 +99,52 @@ class UserRepository(private val postgresClient: PostgresClient) {
     }
 
     /**
-     * Создает нового пользователя
+     * Получает пользователя по email
      */
-    fun createUser(username: String, email: String): Long {
+    fun getUserByEmail(email: String): User? {
         val connection = postgresClient.getConnection()
         try {
             val sql = """
-                INSERT INTO users (username, email, status, created_at)
+                SELECT id, username, email, status, bio, image_id, password_hash, last_login_at, created_at
+                FROM users
+                WHERE email = ?
+            """.trimIndent()
+
+            connection.prepareStatement(sql).use { statement ->
+                statement.setString(1, email)
+                val resultSet = statement.executeQuery()
+
+                return if (resultSet.next()) {
+                    User(
+                        id = resultSet.getLong("id"),
+                        username = resultSet.getString("username"),
+                        email = resultSet.getString("email"),
+                        status = resultSet.getInt("status"),
+                        bio = resultSet.getString("bio"),
+                        imageId = resultSet.getObject("image_id") as Long?,
+                        passwordHash = resultSet.getString("password_hash"),
+                        lastLoginAt = resultSet.getTimestamp("last_login_at")?.toInstant(),
+                        createdAt = resultSet.getTimestamp("created_at").toInstant(),
+                    )
+                } else {
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            throw e
+        } finally {
+            connection.close()
+        }
+    }
+
+    /**
+     * Создает нового пользователя
+     */
+    fun createUser(username: String, email: String, passwordHash: String): Long {
+        val connection = postgresClient.getConnection()
+        try {
+            val sql = """
+                INSERT INTO users (username, email, status, password_hash)
                 VALUES (?, ?, 0, ?)
                 RETURNING id
             """.trimIndent()
@@ -110,7 +152,7 @@ class UserRepository(private val postgresClient: PostgresClient) {
             connection.prepareStatement(sql).use { statement ->
                 statement.setString(1, username)
                 statement.setString(2, email)
-                statement.setTimestamp(3, Timestamp.from(Instant.now()))
+                statement.setString(3, passwordHash)
 
                 val resultSet = statement.executeQuery()
                 if (resultSet.next()) {
@@ -154,9 +196,29 @@ class UserRepository(private val postgresClient: PostgresClient) {
     }
 
     /**
+     * Обновляет время последнего входа пользователя
+     */
+    fun updateLastLogin(userId: Long, lastLoginAt: Instant = Instant.now()): Boolean {
+        val connection = postgresClient.getConnection()
+        try {
+            val sql = "UPDATE users SET last_login_at = ? WHERE id = ?"
+            connection.prepareStatement(sql).use { statement ->
+                statement.setTimestamp(1, Timestamp.from(lastLoginAt))
+                statement.setLong(2, userId)
+                val rowsAffected = statement.executeUpdate()
+                return rowsAffected > 0
+            }
+        } catch (e: Exception) {
+            throw e
+        } finally {
+            connection.close()
+        }
+    }
+
+    /**
      * Получает всех пользователей
      */
-    fun getAllUsers(): List<User> {
+    fun getAllUsers(): List<UserShow> {
         val connection = postgresClient.getConnection()
         try {
             val sql = """
@@ -167,11 +229,11 @@ class UserRepository(private val postgresClient: PostgresClient) {
 
             connection.createStatement().use { statement ->
                 val resultSet = statement.executeQuery(sql)
-                val users = mutableListOf<User>()
+                val users = mutableListOf<UserShow>()
 
                 while (resultSet.next()) {
                     users.add(
-                        User(
+                        UserShow(
                             id = resultSet.getLong("id"),
                             username = resultSet.getString("username"),
                             email = resultSet.getString("email"),

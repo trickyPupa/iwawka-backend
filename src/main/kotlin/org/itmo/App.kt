@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.*
@@ -15,6 +17,7 @@ import io.ktor.server.response.*
 import org.slf4j.event.Level
 import org.flywaydb.core.Flyway
 import org.itmo.config.Config
+import org.itmo.config.JwtConfig
 import org.itmo.api.configureRouting
 import org.itmo.api.controllers.*
 import org.itmo.repository.*
@@ -210,6 +213,33 @@ fun Application.module() {
         }
     }
 
+    install(Authentication) {
+        jwt("auth-jwt") {
+            verifier(JwtConfig.verifier)
+            realm = Config.authJwtIssuer
+
+            validate { credential ->
+                // Проверяем, что токен содержит subject и audience
+                if (credential.payload.subject != null &&
+                    credential.payload.audience.contains(Config.authJwtAudience)) {
+                    JWTPrincipal(credential.payload)
+                } else {
+                    null
+                }
+            }
+
+            challenge { _, _ ->
+                call.respond(
+                    HttpStatusCode.Unauthorized,
+                    mapOf(
+                        "success" to false,
+                        "error" to "Invalid token"
+                    )
+                )
+            }
+        }
+    }
+
     install(StatusPages) {
         exception<Throwable> { call, cause ->
             call.respond(HttpStatusCode.InternalServerError, cause.localizedMessage)
@@ -231,15 +261,20 @@ fun Application.module() {
     val userRepository = UserRepository(postgresClient)
     val imageRepository = ImageRepository(postgresClient)
     val chatRepository = ChatRepository(postgresClient)
+    val tokenRepository = TokenRepository(postgresClient)
 
     val messageService = MessageService(messageRepository)
+    val authService = AuthService(userRepository, tokenRepository)
+    val tokenCleanupService = TokenCleanupService(tokenRepository)
+
+    // автоматическая очистка истёкших токенов
+    tokenCleanupService.startCleanup(intervalHours = 24)
 
     val messageController = MessageController(messageService)
     val chatController = ChatController(chatRepository)
     val userController = UserController(userRepository, imageRepository)
     val imageController = ImageController(imageRepository)
+    val authController = AuthController(authService)
 
-    configureRouting(messageController, chatController, userController, imageController)
-
-//    configureSwagger()
+    configureRouting(messageController, chatController, userController, imageController, authController)
 }

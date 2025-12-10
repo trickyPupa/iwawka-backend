@@ -1,47 +1,65 @@
 package org.itmo.api.routes
 
 import io.ktor.http.*
+import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.itmo.api.controllers.MessageController
-import org.itmo.api.getAuthToken
 import org.itmo.api.getPathParameter
 import org.itmo.api.request.SendMessageRequest
+import org.itmo.api.requirePrincipalUserId
 import org.itmo.api.respondError
 import org.itmo.api.respondSuccess
 
 fun Route.messageRoutes(messageController: MessageController) {
-    route("/message") {
-        get("/{chatId}") {
-            val chatId = call.getPathParameter("chatId")?.toLongOrNull() ?: run {
-                call.respondError("Required parameter \"chatId\" must be integer", HttpStatusCode.BadRequest)
-                return@get
+    authenticate("auth-jwt") {
+        route("/message") {
+            get("/{chatId}") {
+                try {
+                    val chatId = call.getPathParameter("chatId")?.toLongOrNull() ?: run {
+                        call.respondError("Required parameter \"chatId\" must be integer", HttpStatusCode.BadRequest)
+                        return@get
+                    }
+
+                    call.respondSuccess(messageController.getByChat(chatId), HttpStatusCode.OK)
+                } catch (e: Exception) {
+                    call.respondError(e.message ?: "Failed to get messages", HttpStatusCode.InternalServerError)
+                }
             }
 
-            call.respondSuccess(messageController.getByChat(chatId), HttpStatusCode.OK)
-        }
+            post {
+                try {
+                    val userId = call.requirePrincipalUserId()
 
-        post {
-            val requestData = call.receive<SendMessageRequest>()
-//            call.getAuthToken()
-//
-//            val user = TODO()
+                    val requestData = call.receive<SendMessageRequest>()
+                    val success = messageController.sendMessage(requestData, userId)
 
-            val success = messageController.sendMessage(requestData, 1)
-            if (success) call.respondSuccess(null)
-            else call.respondError("Invalid response", HttpStatusCode.BadRequest)
-        }
-
-        delete("/{id}") {
-            val messageId = call.getPathParameter("id")?.toLongOrNull() ?: run {
-                call.respondError("Required parameter \"id\" must be integer", HttpStatusCode.BadRequest)
-                return@delete
+                    if (success) {
+                        call.respondSuccess(mapOf("message" to "Message sent successfully"))
+                    } else {
+                        call.respondError("Failed to send message", HttpStatusCode.BadRequest)
+                    }
+                } catch (e: Exception) {
+                    call.respondError(e.message ?: "Failed to send message", HttpStatusCode.BadRequest)
+                }
             }
-            if (messageController.deleteMessage(messageId)) {
-                call.respond(HttpStatusCode.NoContent)
-            } else {
-                call.respond(HttpStatusCode.NotFound)
+
+            delete("/{id}") {
+                try {
+                    val messageId = call.getPathParameter("id")?.toLongOrNull() ?: run {
+                        call.respondError("Required parameter \"id\" must be integer", HttpStatusCode.BadRequest)
+                        return@delete
+                    }
+
+                    if (messageController.deleteMessage(messageId)) {
+                        call.respond(HttpStatusCode.NoContent)
+                    } else {
+                        call.respond(HttpStatusCode.NotFound)
+                    }
+                } catch (e: Exception) {
+                    call.respondError(e.message ?: "Failed to delete message", HttpStatusCode.InternalServerError)
+                }
             }
         }
     }

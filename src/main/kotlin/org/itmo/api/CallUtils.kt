@@ -4,8 +4,11 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
 import org.itmo.model.User
 import org.itmo.repository.ChatRepository
+import org.itmo.repository.UserRepository
 import org.slf4j.LoggerFactory
 
 data class ApiResponse<T>(
@@ -33,25 +36,28 @@ fun ApplicationCall.getPathParameter(name: String): String? {
 }
 
 fun ApplicationCall.getAuthToken(): String? {
-    return this.request.header("Authorization")?.removePrefix("Bearer ")
+    return request.header("Authorization")?.removePrefix("Bearer ")
 }
 
-fun ApplicationCall.getAuthUser(): User? {
-    val token = this.request.header("Authorization")?.removePrefix("Bearer ")
-
-    if (token.isNullOrEmpty()) {
-        return null
-    }
-    else TODO()
+fun ApplicationCall.getPrincipalUserId(): Long? {
+    val principal = principal<JWTPrincipal>()
+    return principal?.getClaim("sub", String::class)?.toLongOrNull()
 }
 
-suspend fun ApplicationCall.requireAuth(): String? {
-    val token = getAuthToken()
-    if (token == null) {
-        respondError("Unauthorized", HttpStatusCode.Unauthorized)
-        return null
-    }
-    // TODO: валидация токена
-    return token
+fun ApplicationCall.requirePrincipalUserId(): Long {
+    return getPrincipalUserId()
+        ?: throw IllegalStateException("User ID not found in JWT token")
 }
 
+suspend fun ApplicationCall.requireAuth(userRepository: UserRepository): User {
+    val userId = getPrincipalUserId()
+        ?: throw IllegalArgumentException("Unauthorized")
+
+    return userRepository.getUserById(userId)
+        ?: throw IllegalArgumentException("User not found")
+}
+
+suspend fun ApplicationCall.getCurrentUser(userRepository: UserRepository): User? {
+    val userId = getPrincipalUserId() ?: return null
+    return userRepository.getUserById(userId)
+}

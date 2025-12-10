@@ -41,10 +41,40 @@ Flyway автоматически запускается при старте п�
 ## Конфигурация
 Основные настройки описаны в `application.conf`, но всегда могут быть переопределены переменными окружения (`DATABASE_POSTGRES_URL`, `SERVER_PORT` и т.д.). Для локального запуска без Docker достаточно убедиться, что PostgreSQL/Redis/ClickHouse доступны по адресам из файла конфигурации.
 
+## JWT Аутентификация
+
+Приложение использует JWT для аутентификации пользователей. Реализованы access и refresh токены.
+
+1. **Регистрация:**
+```bash
+curl -X POST http://localhost:8080/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"test","email":"test@test.com","password":"password123"}'
+```
+
+2. **Использование токена:**
+```bash
+curl -X GET http://localhost:8080/api/user/1 \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+### Защищённые endpoints
+
+Все API endpoints (кроме `/api/auth/*` и публичных `/api/images/{id}`) требуют JWT аутентификацию через заголовок:
+```
+Authorization: Bearer <access_token>
+```
+
 ## Проверка работы
 
-```powershell
-curl http://localhost:8080/messages
+```bash
+# Проверка здоровья
+curl http://localhost:8080/health
+
+# Регистрация пользователя
+curl -X POST http://localhost:8080/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"john","email":"john@test.com","password":"password123"}'
 ```
 
 В (`logs/application.log`) появятся записи уровня INFO. Для детального логирования, измените `logging.level` в `application.conf`.

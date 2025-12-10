@@ -7,6 +7,7 @@ object Config {
 
     private fun string(path: String) = config.getString(path)
     private fun int(path: String) = config.getInt(path)
+    private fun long(path: String) = config.getLong(path)
 
     val serverHost: String = string("server.host")
     val serverPort: Int = int("server.port")
@@ -24,4 +25,10 @@ object Config {
 
     val flywayEnabled: Boolean = config.getBoolean("flyway.enabled")
     val flywayLocations: List<String> = config.getStringList("flyway.locations")
+
+    val authJwtIssuer: String = string("auth.jwt.issuer")
+    val authJwtAudience: String = string("auth.jwt.audience")
+    val authJwtSecret: String = string("auth.jwt.secret")
+    val authJwtAccessTtlMinutes: Long = long("auth.jwt.accessTtlMinutes")
+    val authJwtRefreshTtlDays: Long = long("auth.jwt.refreshTtlDays")
 }

@@ -7,10 +7,8 @@ import org.itmo.service.MessageService
 
 class MessageController(private val messageService: MessageService) {
 
-    fun sendMessage(request: SendMessageRequest, user: Long): Boolean {
-//        val message = Message.of(request.text, user, request.chatId)
-
-        return messageService.sendMessage(request.text, request.chatId)
+    fun sendMessage(request: SendMessageRequest, userId: Long): Boolean {
+        return messageService.sendMessage(request.text, request.chatId, userId)
     }
 
     fun deleteMessage(messageId: Long) = messageService.deleteMessage(messageId)

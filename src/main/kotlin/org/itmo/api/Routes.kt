@@ -3,17 +3,15 @@ package org.itmo.api
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import org.itmo.api.controllers.ChatController
-import org.itmo.api.controllers.ImageController
-import org.itmo.api.controllers.MessageController
-import org.itmo.api.controllers.UserController
+import org.itmo.api.controllers.*
 import org.itmo.api.routes.*
 
 fun Application.configureRouting(
     messageController: MessageController,
     chatController: ChatController,
     userController: UserController,
-    imageController: ImageController
+    imageController: ImageController,
+    authController: AuthController
 ) {
     routing {
         get("/") {
@@ -29,6 +27,7 @@ fun Application.configureRouting(
         }
 
         route("/api") {
+            authRoutes(authController)
             messageRoutes(messageController)
             chatRoutes(chatController)
             userRoutes(userController)
