@@ -15,8 +15,7 @@ import org.itmo.api.respondError
 import org.itmo.api.respondSuccess
 
 fun Route.imageRoutes(imageController: ImageController) {
-    route("/images") {
-        // Публичный доступ для получения изображений
+    route("/image") {
         get("/{id}") {
             try {
                 val imageId = call.getPathParameter("id")?.toLongOrNull() ?: run {
@@ -53,7 +52,6 @@ fun Route.imageRoutes(imageController: ImageController) {
             }
         }
 
-        // Защищённые маршруты для загрузки и удаления
         authenticate("auth-jwt") {
             post {
                 try {
@@ -112,7 +110,6 @@ fun Route.imageRoutes(imageController: ImageController) {
             }
         }
 
-        // Получить все изображения пользователя
         get("/user/{userId}") {
             val userId = call.getPathParameter("userId")?.toLongOrNull() ?: run {
                 call.respondError("Invalid user ID", HttpStatusCode.BadRequest)

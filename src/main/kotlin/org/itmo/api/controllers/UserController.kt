@@ -38,10 +38,8 @@ class UserController(
             imageRepository.deleteImage(oldImageId)
         }
 
-        // Создаем новое изображение
         val imageId = imageRepository.createImage(imageData, contentType, userId)
 
-        // Обновляем ссылку на аватар в профиле пользователя
         userRepository.updateAvatarReference(userId, imageId)
 
         return imageId

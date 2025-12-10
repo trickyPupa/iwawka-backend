@@ -13,7 +13,8 @@ fun Application.configureRouting(
     userController: UserController,
     imageController: ImageController,
     authController: AuthController,
-    auditLogService: AuditLogService
+    auditLogService: AuditLogService,
+    testController: LoadTestController
 ) {
     routing {
         get("/") {
@@ -26,6 +27,15 @@ fun Application.configureRouting(
 
         get("/health") {
             call.respond(mapOf("status" to "healthy"))
+        }
+
+        get("/load_test") {
+            try {
+                testController.test()
+                call.respondSuccess(testController.test())
+            } catch (e: Exception) {
+                call.respondError("error: ${e.message}")
+            }
         }
 
         route("/api") {

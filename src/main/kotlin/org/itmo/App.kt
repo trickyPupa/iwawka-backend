@@ -280,8 +280,9 @@ fun Application.module() {
     val userController = UserController(userRepository, imageRepository)
     val imageController = ImageController(imageRepository)
     val authController = AuthController(authService)
+    val testController = LoadTestController(messageService)
 
     configureRequestLogging(auditLogService)
 
-    configureRouting(messageController, chatController, userController, imageController, authController, auditLogService)
+    configureRouting(messageController, chatController, userController, imageController, authController, auditLogService, testController)
 }
