@@ -48,6 +48,8 @@ services:
       - clickhouse
     ports:
       - "${APP_PORT:-8080}:8080"
+    volumes:
+      - ./build/libs:/app/libs
     environment:
       DATABASE_POSTGRES_URL: jdbc:postgresql://postgres:${POSTGRES_PORT}/${POSTGRES_DB}
       DATABASE_POSTGRES_USER: ${POSTGRES_USER}
@@ -60,6 +62,7 @@ services:
       SERVER_HOST: ${APP_HOST}
       SERVER_PORT: ${APP_PORT}
       FLYWAY_ENABLED: true
+      FLYWAY_CLEAN_ON_ERROR: true
 
 volumes:
   pgdata:

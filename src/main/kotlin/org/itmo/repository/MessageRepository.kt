@@ -1,26 +1,25 @@
-package org.itmo.resources
+package org.itmo.repository
 
 import org.itmo.db.PostgresClient
 import org.itmo.model.Message
-import java.time.LocalDateTime
 
-class MessageResource(private val postgresClient: PostgresClient) {
+class MessageRepository(private val postgresClient: PostgresClient) {
 
-    fun createMessage(message: Message): Int {
+    fun createMessage(text: String, chatId: Long, userId: Long): Int {
         val query = """
-            INSERT INTO messages (id, content, sender_id, timestamp)
-            VALUES ('${message.id}', '${message.content}', '${message.senderId}')
-            ON CONFLICT (id) DO NOTHING
+            INSERT INTO messages (content, sender_id, chat_id)
+            VALUES ('${text}', '${userId}', '${chatId}')
+            ON CONFLICT DO NOTHING
         """.trimIndent()
         return postgresClient.executeUpdate(query)
     }
 
     fun getMessagesByChatId(chatId: Long): List<Message> {
         val query = """
-            SELECT id, content, sender_id, timestamp
+            SELECT id, content, sender_id, created_at, chat_id
             FROM messages
             WHERE chat_id = '$chatId'
-            ORDER BY created DESC
+            ORDER BY created_at DESC
         """.trimIndent()
 
         return postgresClient.executeQuery(query) { rs ->
@@ -28,9 +27,8 @@ class MessageResource(private val postgresClient: PostgresClient) {
                 id = rs.getLong("id"),
                 content = rs.getString("content"),
                 senderId = rs.getLong("sender_id"),
-                created = LocalDateTime.parse(rs.getString("timestamp")),
+                createdAt = rs.getTimestamp("created_at").toInstant(),
                 chatId = rs.getLong("chat_id"),
-                deleted = LocalDateTime.parse(rs.getString("timestamp")),
             )
         }
     }

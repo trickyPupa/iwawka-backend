@@ -1,12 +1,12 @@
 package org.itmo.service
 
 import org.itmo.model.Message
-import org.itmo.resources.MessageResource
+import org.itmo.repository.MessageRepository
 
-class MessageService(private val resource: MessageResource) {
+class MessageService(private val resource: MessageRepository) {
 
-    fun sendMessage(message: Message): Boolean{
-        return resource.createMessage(message) > 0
+    fun sendMessage(text: String, chat: Long): Boolean{
+        return resource.createMessage(text, chat, 1) > 0
     }
 
     fun deleteMessage(messageId: Long): Boolean {

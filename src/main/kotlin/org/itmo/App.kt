@@ -1,23 +1,25 @@
 package org.itmo
 
-import org.itmo.api.controllers.ChatController
-import org.itmo.api.configureRouting
-import org.itmo.config.Config
-import org.itmo.db.PostgresClient
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.statuspages.*
+import io.ktor.server.plugins.calllogging.*
+import io.ktor.server.request.*
 import io.ktor.http.*
 import io.ktor.server.response.*
+import org.slf4j.event.Level
 import org.flywaydb.core.Flyway
-import org.itmo.api.controllers.MessageController
-import org.itmo.config.configureSwagger
-import org.itmo.db.ClickHouseClient
-import org.itmo.resources.MessageResource
-import org.itmo.service.MessageService
+import org.itmo.config.Config
+import org.itmo.api.configureRouting
+import org.itmo.api.controllers.*
+import org.itmo.repository.*
+import org.itmo.service.*
+import org.itmo.db.*
 
 fun main() {
     if (Config.flywayEnabled) {
@@ -30,36 +32,182 @@ fun main() {
 }
 
 fun runMigrations() {
-    val maxRetries = 10
+    val maxRetries = 5
     var retries = 0
     var lastException: Exception? = null
+    val cleanOnError = System.getenv("FLYWAY_CLEAN_ON_ERROR")?.toBoolean() ?: false
 
     while (retries < maxRetries) {
         try {
-            println("Attempting to connect to database... (attempt ${retries + 1}/$maxRetries)")
-            Flyway.configure()
+            println("=== Migration Attempt ${retries + 1}/$maxRetries ===")
+            println("Database URL: ${Config.postgresUrl}")
+            if (cleanOnError) {
+                println("⚠️  FLYWAY_CLEAN_ON_ERROR is enabled - will drop all objects on error")
+            }
+
+            val flyway = Flyway.configure()
                 .dataSource(Config.postgresUrl, Config.postgresUser, Config.postgresPassword)
                 .locations(*Config.flywayLocations.toTypedArray())
+                .baselineOnMigrate(true)
+                .cleanDisabled(!cleanOnError)
                 .load()
-                .migrate()
-            return
-        } catch (e: Exception) {
-            lastException = e
-            retries++
-            if (retries < maxRetries) {
-                val waitTime = minOf(1000L * retries, 10000L)
-                println("Failed to connect to database. Retrying in ${waitTime}ms...")
-                Thread.sleep(waitTime)
+
+            val info = flyway.info()
+            println("\n--- Current Migration Status ---")
+            println("Current schema version: ${info.current()?.version ?: "none"}")
+            println("Pending migrations: ${info.pending().size}")
+            info.pending().forEach { migration ->
+                println("  - ${migration.version}: ${migration.description}")
             }
+
+            val result = flyway.migrate()
+
+            println("\n--- Migration Result ---")
+            println("✅ Migrations executed: ${result.migrationsExecuted}")
+            println("✅ Database migrations completed successfully\n")
+            return
+
+        } catch (e: org.flywaydb.core.api.exception.FlywayValidateException) {
+            println("\n❌ Flyway Validation Error:")
+            println("Error message: ${e.message}")
+
+            if (e.message?.contains("checksum mismatch", ignoreCase = true) == true) {
+                println("\n⚠️  Migration file was modified after being applied to database")
+
+                if (cleanOnError) {
+                    println("🧹 Cleaning database and reapplying all migrations...")
+                    try {
+                        val flyway = Flyway.configure()
+                            .dataSource(Config.postgresUrl, Config.postgresUser, Config.postgresPassword)
+                            .locations(*Config.flywayLocations.toTypedArray())
+                            .cleanDisabled(false)
+                            .load()
+
+                        flyway.clean()
+                        println("✅ Database cleaned successfully")
+                        println("🔄 Applying migrations from scratch...\n")
+
+                        flyway.migrate()
+                        println("✅ Migrations completed successfully\n")
+                        return
+                    } catch (cleanException: Exception) {
+                        println("❌ Clean and migrate failed: ${cleanException.message}")
+                        cleanException.printStackTrace()
+                        lastException = cleanException
+                    }
+                } else {
+                    println("🔧 Attempting to repair schema history...")
+                    try {
+                        val flyway = Flyway.configure()
+                            .dataSource(Config.postgresUrl, Config.postgresUser, Config.postgresPassword)
+                            .locations(*Config.flywayLocations.toTypedArray())
+                            .load()
+
+                        flyway.repair()
+                        println("✅ Schema history repaired successfully")
+                        println("🔄 Retrying migration...\n")
+
+                        flyway.migrate()
+                        println("✅ Migrations completed after repair\n")
+                        return
+                    } catch (repairException: Exception) {
+                        println("❌ Repair failed: ${repairException.message}")
+                        println("\n💡 Solution: Set FLYWAY_CLEAN_ON_ERROR=true to automatically clean DB on errors")
+                        lastException = repairException
+                    }
+                }
+            } else {
+                lastException = e
+            }
+
+        } catch (e: java.sql.SQLException) {
+            println("\n❌ Database Connection Error:")
+            println("SQL State: ${e.sqlState}")
+            println("Error Code: ${e.errorCode}")
+            println("Error message: ${e.message}")
+            lastException = e
+
+        } catch (e: Exception) {
+            println("\n❌ Unexpected Error:")
+            println("Error type: ${e::class.simpleName}")
+            println("Error message: ${e.message}")
+            e.cause?.let { cause ->
+                println("Caused by: ${cause.javaClass.simpleName} - ${cause.message}")
+            }
+
+            // Если это ошибка миграции и включен cleanOnError
+            if (cleanOnError && e.message?.contains("migration", ignoreCase = true) == true) {
+                println("\n🧹 Cleaning database and retrying from scratch...")
+                try {
+                    val flyway = Flyway.configure()
+                        .dataSource(Config.postgresUrl, Config.postgresUser, Config.postgresPassword)
+                        .locations(*Config.flywayLocations.toTypedArray())
+                        .cleanDisabled(false)
+                        .load()
+
+                    flyway.clean()
+                    println("✅ Database cleaned successfully")
+                    println("🔄 Applying migrations from scratch...\n")
+
+                    flyway.migrate()
+                    println("✅ Migrations completed successfully\n")
+                    return
+                } catch (cleanException: Exception) {
+                    println("❌ Clean and migrate failed: ${cleanException.message}")
+                    cleanException.printStackTrace()
+                    lastException = cleanException
+                }
+            } else {
+                e.printStackTrace()
+                lastException = e
+            }
+        }
+
+        retries++
+        if (retries < maxRetries) {
+            val waitTime = minOf(2000L * retries, 10000L)
+            println("\n⏳ Retrying in ${waitTime / 1000}s...\n")
+            Thread.sleep(waitTime)
         }
     }
 
-    throw RuntimeException("Failed to connect to database after $maxRetries attempts", lastException)
+    println("\n💥 Failed to complete migrations after $maxRetries attempts")
+    println("Last error: ${lastException?.message}")
+    println("\n💡 Solutions:")
+    println("  1. Fix the migration SQL errors")
+    println("  2. Set FLYWAY_CLEAN_ON_ERROR=true in docker-compose.yml")
+    println("  3. Run: docker-compose down -v  (to reset database)")
+    throw RuntimeException("Failed to complete migrations after $maxRetries attempts", lastException)
 }
 
 fun Application.module() {
+    install(CallLogging) {
+        level = Level.INFO
+        format { call ->
+            val status = call.response.status()
+            val httpMethod = call.request.httpMethod.value
+            val uri = call.request.uri
+            val userAgent = call.request.headers["User-Agent"]
+            val contentType = call.request.contentType()
+
+            buildString {
+                append("$httpMethod $uri -> ${status?.value ?: "N/A"}")
+                if (contentType != ContentType.Any) {
+                    append(" | Content-Type: $contentType")
+                }
+                userAgent?.let { append(" | User-Agent: ${it.take(50)}") }
+            }
+        }
+        filter { call ->
+            !call.request.path().startsWith("/health")
+        }
+    }
+
     install(ContentNegotiation) {
-        jackson()
+        jackson {
+            registerModule(JavaTimeModule())
+            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+        }
     }
 
     install(StatusPages) {
@@ -79,14 +227,19 @@ fun Application.module() {
         password = Config.clickhousePassword
     )
 
-    val messageResource = MessageResource(postgresClient)
+    val messageRepository = MessageRepository(postgresClient)
+    val userRepository = UserRepository(postgresClient)
+    val imageRepository = ImageRepository(postgresClient)
+    val chatRepository = ChatRepository(postgresClient)
 
-    val messageService = MessageService(messageResource)
+    val messageService = MessageService(messageRepository)
 
     val messageController = MessageController(messageService)
-    val chatController = ChatController()
+    val chatController = ChatController(chatRepository)
+    val userController = UserController(userRepository, imageRepository)
+    val imageController = ImageController(imageRepository)
 
-    configureRouting(messageController, chatController)
+    configureRouting(messageController, chatController, userController, imageController)
 
 //    configureSwagger()
 }

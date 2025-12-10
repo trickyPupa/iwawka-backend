@@ -4,7 +4,7 @@ Iwawka — это бэкенд мессенджера на Kotlin/ Ktor с Postg
 
 ## Требования
 - Docker 24+ и Docker Compose v2
-- JDK 17+ 
+- JDK 21+ 
 
 ## Запуск 
 

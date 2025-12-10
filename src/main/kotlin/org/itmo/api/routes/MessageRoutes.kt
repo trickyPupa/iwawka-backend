@@ -14,7 +14,7 @@ import org.itmo.api.respondSuccess
 fun Route.messageRoutes(messageController: MessageController) {
     route("/message") {
         get("/{chatId}") {
-            val chatId = call.getPathParameter("id")?.toLongOrNull() ?: run {
+            val chatId = call.getPathParameter("chatId")?.toLongOrNull() ?: run {
                 call.respondError("Required parameter \"chatId\" must be integer", HttpStatusCode.BadRequest)
                 return@get
             }
@@ -24,12 +24,13 @@ fun Route.messageRoutes(messageController: MessageController) {
 
         post {
             val requestData = call.receive<SendMessageRequest>()
-            call.getAuthToken()
+//            call.getAuthToken()
+//
+//            val user = TODO()
 
-            val user = TODO()
-
-            messageController.sendMessage(requestData, user)
-            call.respondSuccess(HttpStatusCode.OK)
+            val success = messageController.sendMessage(requestData, 1)
+            if (success) call.respondSuccess(null)
+            else call.respondError("Invalid response", HttpStatusCode.BadRequest)
         }
 
         delete("/{id}") {

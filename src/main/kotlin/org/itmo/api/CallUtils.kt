@@ -5,12 +5,16 @@ import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import org.itmo.model.User
+import org.itmo.repository.ChatRepository
+import org.slf4j.LoggerFactory
 
 data class ApiResponse<T>(
     val success: Boolean,
     val data: T? = null,
     val error: String? = null
 )
+
+val logger = LoggerFactory.getLogger(ChatRepository::class.java)
 
 suspend fun <T> ApplicationCall.respondSuccess(data: T, status: HttpStatusCode = HttpStatusCode.OK) {
     respond(status, ApiResponse(success = true, data = data))
@@ -20,14 +24,12 @@ suspend fun ApplicationCall.respondError(
     message: String,
     status: HttpStatusCode = HttpStatusCode.BadRequest
 ) {
+    logger.error("Error: $message")
     respond(status, ApiResponse<Unit>(success = false, error = message))
 }
 
-suspend fun ApplicationCall.getPathParameter(name: String): String? {
-    return parameters[name] ?: run {
-        respondError("Missing required parameter: $name", HttpStatusCode.BadRequest)
-        null
-    }
+fun ApplicationCall.getPathParameter(name: String): String? {
+    return parameters[name]
 }
 
 fun ApplicationCall.getAuthToken(): String? {
