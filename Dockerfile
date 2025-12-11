@@ -1,7 +1,7 @@
 FROM gradle:9.2-jdk21 AS build
 WORKDIR /app
 COPY . .
-RUN ./gradlew installDist --no-daemon
+RUN chmod +x ./gradlew && ./gradlew installDist --no-daemon
 
 FROM eclipse-temurin:21-jre
 WORKDIR /opt/iwawka
