@@ -31,4 +31,7 @@ object Config {
     val authJwtSecret: String = string("auth.jwt.secret")
     val authJwtAccessTtlMinutes: Long = long("auth.jwt.accessTtlMinutes")
     val authJwtRefreshTtlDays: Long = long("auth.jwt.refreshTtlDays")
+
+    val gigachatAuthKey: String = string("gigachat.authkey")
+    val gigachatModel: String = string("gigachat.model")
 }

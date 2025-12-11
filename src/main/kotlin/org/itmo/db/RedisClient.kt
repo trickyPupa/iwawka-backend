@@ -17,6 +17,12 @@ class RedisClient(private val host: String, private val port: Int) {
         }
     }
 
+    fun setex(key: String, value: String, expireTime: Long) {
+        jedisPool.resource.use { jedis ->
+            jedis.setex(key, expireTime, value)
+        }
+    }
+
     fun delete(key: String) {
         jedisPool.resource.use { jedis ->
             jedis.del(key)

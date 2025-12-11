@@ -14,7 +14,8 @@ fun Application.configureRouting(
     imageController: ImageController,
     authController: AuthController,
     auditLogService: AuditLogService,
-    testController: LoadTestController
+    testController: LoadTestController,
+    aiController: AiController
 ) {
     routing {
         get("/") {
@@ -45,6 +46,7 @@ fun Application.configureRouting(
             userRoutes(userController)
             imageRoutes(imageController)
             auditLogRoutes(auditLogService)
+            aiRoutes(aiController)
         }
     }
 }

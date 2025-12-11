@@ -16,4 +16,12 @@ class MessageService(private val resource: MessageRepository) {
     fun getByChat(chatId: Long): List<Message> {
         return resource.getMessagesByChatId(chatId)
     }
+
+    fun getByChatInterval(chatId: Long, interval: Long): List<Message> {
+        return resource.getMessagesByChatInterval(chatId, interval)
+    }
+
+    fun getByIds(ids: List<Long>): List<Message> {
+        return resource.getMessagesByIds(ids)
+    }
 }

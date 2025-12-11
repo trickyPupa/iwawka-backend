@@ -262,6 +262,11 @@ fun Application.module() {
         password = Config.postgresPassword
     )
 
+    val redisClient = RedisClient(
+        host = Config.redisHost,
+        port = Config.redisPort,
+    )
+
     val messageRepository = MessageRepository(postgresClient)
     val userRepository = UserRepository(postgresClient)
     val imageRepository = ImageRepository(postgresClient)
@@ -272,6 +277,7 @@ fun Application.module() {
     val authService = AuthService(userRepository, tokenRepository)
     val tokenCleanupService = TokenCleanupService(tokenRepository)
     val auditLogService = AuditLogService()
+    val aiService = AiService(Config.gigachatAuthKey, redisClient)
 
     tokenCleanupService.startCleanup(intervalHours = 24)
 
@@ -281,8 +287,10 @@ fun Application.module() {
     val imageController = ImageController(imageRepository)
     val authController = AuthController(authService)
     val testController = LoadTestController(messageService)
+    val aiController = AiController(aiService, messageService)
 
     configureRequestLogging(auditLogService)
 
-    configureRouting(messageController, chatController, userController, imageController, authController, auditLogService, testController)
+    configureRouting(messageController, chatController, userController, imageController,
+        authController, auditLogService, testController, aiController)
 }

@@ -7,5 +7,5 @@ data class Message(
     val content: String,
     val senderId: Long,
     val chatId: Long,
-    val createdAt: Instant?,
+    val createdAt: Instant,
 )
