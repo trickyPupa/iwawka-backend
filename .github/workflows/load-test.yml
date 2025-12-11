@@ -17,7 +17,7 @@ jobs:
       
       - name: Start server
         run: |
-          docker-compose up -d
+          docker compose up -d
           sleep 60
       
       - name: Wait for service to be ready
@@ -56,8 +56,8 @@ jobs:
           echo "=== Docker containers ==="
           docker ps -a
           echo "=== Docker logs ==="
-          docker-compose logs || echo "No docker-compose logs available"
+          docker compose logs || echo "No docker compose logs available"
       
       - name: Stop server
         if: always()
-        run: docker-compose down
+        run: docker compose down
