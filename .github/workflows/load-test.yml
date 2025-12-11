@@ -1,5 +1,39 @@
 name: Load Testing CI
 
+env:
+
+  POSTGRES_DB: postgres
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_PORT: 5432
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+  CLICKHOUSE_DB: default
+  CLICKHOUSE_USER: default
+  CLICKHOUSE_PASSWORD:
+  CLICKHOUSE_HTTP_PORT: 8123
+  CLICKHOUSE_NATIVE_PORT: 9000
+  APP_HOST: 0.0.0.0
+  APP_PORT: 8080
+  FLYWAY_ENABLED: true
+  AUTH_JWT_ISSUER: "iwawka"
+  AUTH_JWT_AUDIENCE: "audience"
+  AUTH_JWT_SECRET: megaultrasecretkey228
+  AUTH_JWT_ACCESS_TTL_MINUTES: 120
+  AUTH_JWT_REFRESH_TTL_DAYS: 30
+  DATABASE_POSTGRES_URL: "jdbc: postgresql://localhost:5432/postgres"
+  DATABASE_POSTGRES_USER: postgres
+  DATABASE_POSTGRES_PASSWORD: postgres
+  DATABASE_REDIS_HOST: localhost
+  DATABASE_REDIS_PORT: 6379
+  DATABASE_CLICKHOUSE_URL: jdbc:clickhouse://localhost:8123/default
+  DATABASE_CLICKHOUSE_USER: default
+  DATABASE_CLICKHOUSE_PASSWORD:
+  SERVER_HOST: 0.0.0.0
+  SERVER_PORT: 8080
+  GIGACHAT_API_KEY: ${{ secrets.GIGACHAT_API_KEY }}
+
+
 on:
   push:
     branches: [ master ]
@@ -18,20 +52,51 @@ jobs:
       - name: Start server
         run: |
           docker compose up -d
-          sleep 60
-      
+          sleep 120
+
       - name: Wait for service to be ready
         run: |
-          echo "Waiting for service..."
+          echo "=== Checking Docker containers ==="
+          
           for i in {1..30}; do
-            if curl -f http://localhost:8080/health 2>/dev/null; then
-              echo "Service is ready!"
+            RUNNING=$(docker compose ps --status running -q | wc -l)
+            TOTAL=$(docker compose ps -q | wc -l)
+            echo "Attempt $i: $RUNNING/$TOTAL containers running"
+          
+            if [ "$RUNNING" -eq "$TOTAL" ] && [ "$TOTAL" -gt 0 ]; then
+              echo "All containers are running!"
               break
             fi
-            echo "Attempt $i: Service not ready yet..."
+          
+            EXITED=$(docker compose ps --status exited -q | wc -l)
+            if [ "$EXITED" -gt 0 ]; then
+              echo "ERROR: Some containers exited!"
+              docker compose ps
+              docker compose logs
+              exit 1
+            fi
+          
             sleep 5
           done
-        continue-on-error: false
+          
+          echo "=== Waiting for HTTP endpoint ==="
+          for i in {1..30}; do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health || echo "000")
+            echo "Attempt $i: HTTP status $HTTP_CODE"
+          
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "Service is ready!"
+              exit 0
+            fi
+          
+            sleep 5
+          done
+          
+          echo "ERROR: Service did not become ready"
+          docker compose ps
+          docker compose logs --tail=50
+          exit 1
+        timeout-minutes: 5
       
       - name: Build load test image
         run: docker build -t local-loadgen -f scripts/Dockerfile scripts/
@@ -48,7 +113,9 @@ jobs:
             -e DURATION=1m \
             -e PRE_VUS=5000 \
             -e MAX_VUS=8000 \
-            local-loadgen
+            local-loadgen \
+            --quiet \
+            --log-output=none
         
       - name: Show Docker logs on failure
         if: failure()
