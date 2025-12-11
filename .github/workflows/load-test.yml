@@ -21,12 +21,12 @@ env:
   AUTH_JWT_SECRET: megaultrasecretkey228
   AUTH_JWT_ACCESS_TTL_MINUTES: 120
   AUTH_JWT_REFRESH_TTL_DAYS: 30
-  DATABASE_POSTGRES_URL: "jdbc: postgresql://localhost:5432/postgres"
+  DATABASE_POSTGRES_URL: "jdbc:postgresql://localhost:5432/postgres"
   DATABASE_POSTGRES_USER: postgres
   DATABASE_POSTGRES_PASSWORD: postgres
   DATABASE_REDIS_HOST: localhost
   DATABASE_REDIS_PORT: 6379
-  DATABASE_CLICKHOUSE_URL: jdbc:clickhouse://localhost:8123/default
+  DATABASE_CLICKHOUSE_URL: "jdbc:clickhouse://clickhouse:8123/default"
   DATABASE_CLICKHOUSE_USER: default
   DATABASE_CLICKHOUSE_PASSWORD:
   SERVER_HOST: 0.0.0.0
@@ -109,10 +109,10 @@ jobs:
             --network host \
             -e TARGET_URL=http://localhost:8080/load_test \
             -e METHOD=GET \
-            -e RATE=8000 \
+            -e RATE=10000 \
             -e DURATION=1m \
-            -e PRE_VUS=5000 \
-            -e MAX_VUS=8000 \
+            -e PRE_VUS=6000 \
+            -e MAX_VUS=11000 \
             local-loadgen \
             --quiet \
             --log-output=none
