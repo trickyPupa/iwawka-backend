@@ -31,7 +31,7 @@ env:
   DATABASE_CLICKHOUSE_PASSWORD:
   SERVER_HOST: 0.0.0.0
   SERVER_PORT: 8080
-  GIGACHAT_API_KEY: ${{ secrets.GIGACHAT_API_KEY }}
+  GIGACHAT_API_KEY: "${{ vars.GIGACHAT_API_KEY }}"
 
 
 on:
@@ -51,7 +51,7 @@ jobs:
       
       - name: Start server
         run: |
-          export GIGACHAT_API_KEY="${{ secrets.GIGACHAT_API_KEY }}"
+          export GIGACHAT_API_KEY="${{ vars.GIGACHAT_API_KEY }}"
           docker compose up -d
 
       - name: Wait for service to be ready
