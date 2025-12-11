@@ -51,14 +51,14 @@ jobs:
       
       - name: Start server
         run: |
+          export GIGACHAT_API_KEY="${{ secrets.GIGACHAT_API_KEY }}"
           docker compose up -d
-          sleep 120
 
       - name: Wait for service to be ready
         run: |
           echo "=== Checking Docker containers ==="
           
-          for i in {1..30}; do
+          for i in {1..10}; do
             RUNNING=$(docker compose ps --status running -q | wc -l)
             TOTAL=$(docker compose ps -q | wc -l)
             echo "Attempt $i: $RUNNING/$TOTAL containers running"
@@ -80,7 +80,7 @@ jobs:
           done
           
           echo "=== Waiting for HTTP endpoint ==="
-          for i in {1..30}; do
+          for i in {1..10}; do
             HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health || echo "000")
             echo "Attempt $i: HTTP status $HTTP_CODE"
           
