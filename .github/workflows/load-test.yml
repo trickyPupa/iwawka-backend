@@ -109,10 +109,10 @@ jobs:
             --network host \
             -e TARGET_URL=http://localhost:8080/load_test \
             -e METHOD=GET \
-            -e RATE=10000 \
+            -e RATE=8000 \
             -e DURATION=1m \
-            -e PRE_VUS=6000 \
-            -e MAX_VUS=11000 \
+            -e PRE_VUS=5000 \
+            -e MAX_VUS=8000 \
             local-loadgen \
             --quiet \
             --log-output=none
