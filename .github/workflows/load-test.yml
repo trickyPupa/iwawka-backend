@@ -1,0 +1,63 @@
+name: Load Testing CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  load-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Start server
+        run: |
+          docker-compose up -d
+          sleep 60
+      
+      - name: Wait for service to be ready
+        run: |
+          echo "Waiting for service..."
+          for i in {1..30}; do
+            if curl -f http://localhost:8080/health 2>/dev/null; then
+              echo "Service is ready!"
+              break
+            fi
+            echo "Attempt $i: Service not ready yet..."
+            sleep 5
+          done
+        continue-on-error: false
+      
+      - name: Build load test image
+        run: docker build -t local-loadgen -f scripts/Dockerfile scripts/
+      
+      - name: Run basic load test
+        run: |
+          docker run --rm \
+            --ulimit nofile=65536:65536 \
+            --ulimit nproc=65536:65536 \
+            --network host \
+            -e TARGET_URL=http://localhost:8080/load_test \
+            -e METHOD=GET \
+            -e RATE=8000 \
+            -e DURATION=1m \
+            -e PRE_VUS=5000 \
+            -e MAX_VUS=8000 \
+            local-loadgen
+        
+      - name: Show Docker logs on failure
+        if: failure()
+        run: |
+          echo "=== Docker containers ==="
+          docker ps -a
+          echo "=== Docker logs ==="
+          docker-compose logs || echo "No docker-compose logs available"
+      
+      - name: Stop server
+        if: always()
+        run: docker-compose down

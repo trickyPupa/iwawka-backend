@@ -32,7 +32,6 @@ fun Application.configureRouting(
 
         get("/load_test") {
             try {
-                testController.test()
                 call.respondSuccess(testController.test())
             } catch (e: Exception) {
                 call.respondError("error: ${e.message}")
