@@ -1,0 +1,60 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: auth-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-auth_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    container_name: auth-clickhouse
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-default}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:- }
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ports:
+      - "${CLICKHOUSE_HTTP_PORT:-8123}:8123"
+      - "${CLICKHOUSE_NATIVE_PORT:-9000}:9000"
+    volumes:
+      - chdata:/var/lib/clickhouse
+
+  app:
+    build:
+      context: ../..
+      dockerfile: services/auth-service/Dockerfile
+    container_name: iwawka-auth
+    depends_on:
+      - postgres
+      - clickhouse
+    ports:
+      - "${APP_PORT:-8001}:8001"
+    environment:
+      DATABASE_POSTGRES_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-auth_db}
+      DATABASE_POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      DATABASE_POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DATABASE_CLICKHOUSE_URL: jdbc:clickhouse://clickhouse:8123/${CLICKHOUSE_DB:-default}
+      DATABASE_CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      DATABASE_CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:- }
+      SERVER_HOST: ${SERVER_HOST:-0.0.0.0}
+      SERVER_PORT: ${APP_PORT:-8001}
+      FLYWAY_ENABLED: ${FLYWAY_ENABLED:-true}
+      FLYWAY_CLEAN_ON_ERROR: ${FLYWAY_CLEAN_ON_ERROR:-false}
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-iwawka}
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-iwawka-audience}
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-change-me-to-random-secret-in-production}
+      AUTH_JWT_ACCESS_TTL_MINUTES: ${AUTH_JWT_ACCESS_TTL_MINUTES:-15}
+      AUTH_JWT_REFRESH_TTL_DAYS: ${AUTH_JWT_REFRESH_TTL_DAYS:-30}
+
+volumes:
+  pgdata:
+  chdata:
+
