@@ -115,4 +115,20 @@ class MessageRepository(private val postgresClient: PostgresClient) {
             )
         }
     }
+
+    fun markMessagesAsReadUpTo(chatId: Long, messageId: Long, userId: Long): Int {
+        val query = """
+            INSERT INTO message_reads (message_id, user_id)
+            SELECT id, $userId
+            FROM messages
+            WHERE chat_id = $chatId
+              AND created_at <= (
+                SELECT created_at FROM messages WHERE id = $messageId
+            )
+              AND sender_id != $userId
+            ON CONFLICT DO NOTHING
+        """.trimIndent()
+
+        return postgresClient.executeUpdate(query)
+    }
 }
