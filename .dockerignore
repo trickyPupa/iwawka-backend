@@ -1,0 +1,41 @@
+# Git
+.git
+.gitignore
+.github
+
+# IDE
+.idea
+*.iml
+*.ipr
+*.iws
+
+# Build outputs (they will be created during Docker build)
+build
+**/build
+out
+**/out
+
+# Gradle cache (not needed in Docker)
+.gradle
+**/.gradle
+
+# Logs and temp
+*.log
+*.tmp
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+**/.env
+
+# Documentation
+*.md
+!README.md
+
+# Scripts (if not needed in container)
+scripts
+

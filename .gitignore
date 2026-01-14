@@ -4,7 +4,7 @@
 # Gradle build outputs
 build/
 **/build/
-!gradle/wrapper/gradle-wrapper.jar
+!services/*/gradle/wrapper/gradle-wrapper.jar
 
 # IntelliJ IDEA / JetBrains project files
 *.iml
@@ -22,3 +22,4 @@ out/
 Thumbs.db
 
 .env
+**/.env

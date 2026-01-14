@@ -1,10 +1,10 @@
 services:
   postgres:
     image: postgres:16
-    container_name: iwawka-postgres
+    container_name: auth-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-iwawka_db}
+      POSTGRES_DB: ${POSTGRES_DB:-auth_db}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
@@ -12,19 +12,9 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
-  redis:
-    image: redis:7
-    container_name: iwawka-redis
-    command: ["redis-server", "--save", "20", "1", "--loglevel", "warning"]
-    restart: unless-stopped
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    volumes:
-      - redisdata:/data
-
   clickhouse:
     image: clickhouse/clickhouse-server:24.8
-    container_name: iwawka-clickhouse
+    container_name: auth-clickhouse
     restart: unless-stopped
     environment:
       CLICKHOUSE_DB: ${CLICKHOUSE_DB:-default}
@@ -37,54 +27,34 @@ services:
     volumes:
       - chdata:/var/lib/clickhouse
 
-  auth-service:
+  app:
     build:
-      context: .
+      context: ../..
       dockerfile: services/auth-service/Dockerfile
     container_name: iwawka-auth
     depends_on:
       - postgres
       - clickhouse
     ports:
-      - "8001:8001"
-    env_file:
-      - services/auth-service/.env
+      - "${APP_PORT:-8001}:8001"
     environment:
+      DATABASE_POSTGRES_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-auth_db}
+      DATABASE_POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      DATABASE_POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DATABASE_CLICKHOUSE_URL: jdbc:clickhouse://clickhouse:8123/${CLICKHOUSE_DB:-default}
+      DATABASE_CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      DATABASE_CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:- }
+      SERVER_HOST: ${SERVER_HOST:-0.0.0.0}
+      SERVER_PORT: ${APP_PORT:-8001}
+      FLYWAY_ENABLED: ${FLYWAY_ENABLED:-true}
+      FLYWAY_CLEAN_ON_ERROR: ${FLYWAY_CLEAN_ON_ERROR:-false}
       AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-iwawka}
       AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-iwawka-audience}
       AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-change-me-to-random-secret-in-production}
       AUTH_JWT_ACCESS_TTL_MINUTES: ${AUTH_JWT_ACCESS_TTL_MINUTES:-15}
       AUTH_JWT_REFRESH_TTL_DAYS: ${AUTH_JWT_REFRESH_TTL_DAYS:-30}
 
-  chat-service:
-    build:
-      context: .
-      dockerfile: services/chat-service/Dockerfile
-    container_name: iwawka-chat
-    depends_on:
-      - postgres
-      - redis
-      - clickhouse
-    ports:
-      - "8002:8002"
-    env_file:
-      - services/chat-service/.env
-    environment:
-      GIGACHAT_API_KEY: ${GIGACHAT_API_KEY:- }
-
-  nginx:
-    image: nginx:latest
-    container_name: iwawka-nginx
-    restart: unless-stopped
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - auth-service
-      - chat-service
-
 volumes:
   pgdata:
-  redisdata:
   chdata:
+
