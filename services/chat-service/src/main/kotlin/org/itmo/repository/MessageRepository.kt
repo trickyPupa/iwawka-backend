@@ -75,4 +75,44 @@ class MessageRepository(private val postgresClient: PostgresClient) {
         val query = "DELETE FROM messages WHERE id = '$messageId'"
         return postgresClient.executeUpdate(query)
     }
+
+    fun markMessagesAsRead(chatId: Long, messageIds: List<Long>, userId: Long): Int {
+        if (messageIds.isEmpty()) return 0
+
+        val query = """
+            INSERT INTO message_reads (message_id, user_id)
+            SELECT id, $userId
+            FROM messages
+            WHERE chat_id = $chatId
+              AND id IN (${messageIds.joinToString(",")})
+              AND sender_id != $userId
+            ON CONFLICT DO NOTHING
+        """.trimIndent()
+
+        return postgresClient.executeUpdate(query)
+    }
+
+    fun getNewMessages(chatId: Long, userId: Long): List<Message> {
+        val query = """
+            SELECT m.id, m.content, m.sender_id, m.created_at, m.chat_id
+            FROM messages m
+            LEFT JOIN message_reads mr
+                ON mr.message_id = m.id
+               AND mr.user_id = $userId
+            WHERE m.chat_id = $chatId
+              AND m.sender_id != $userId
+              AND mr.id IS NULL
+            ORDER BY m.created_at ASC
+        """.trimIndent()
+
+        return postgresClient.executeQuery(query) { rs ->
+            Message(
+                id = rs.getLong("id"),
+                content = rs.getString("content"),
+                senderId = rs.getLong("sender_id"),
+                createdAt = rs.getTimestamp("created_at").toInstant(),
+                chatId = rs.getLong("chat_id"),
+            )
+        }
+    }
 }

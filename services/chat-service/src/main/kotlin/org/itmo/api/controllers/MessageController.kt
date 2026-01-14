@@ -37,4 +37,12 @@ class MessageController(
         }
         return mapOf("messages" to items)
     }
+
+    fun markAsRead(chatId: Long, messageIds: List<Long>, userId: Long) {
+        messageService.markAsRead(chatId, messageIds, userId)
+    }
+
+    fun getNewMessages(chatId: Long, userId: Long): List<Message> {
+        return messageService.getNewMessages(chatId, userId)
+    }
 }

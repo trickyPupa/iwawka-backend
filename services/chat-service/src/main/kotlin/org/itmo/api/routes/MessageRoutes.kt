@@ -6,6 +6,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.itmo.api.controllers.MessageController
 import org.itmo.api.getPathParameter
+import org.itmo.api.request.MessageReadRequest
 import org.itmo.api.request.SendMessageRequest
 import org.itmo.api.requirePrincipalUserId
 import org.itmo.api.respondError
@@ -57,6 +58,50 @@ fun Route.messageRoutes(messageController: MessageController) {
                 }
             } catch (e: Exception) {
                 call.respondError(e.message ?: "Failed to delete message", HttpStatusCode.InternalServerError)
+            }
+        }
+
+        post("/read") {
+            try {
+                val userId = call.requirePrincipalUserId()
+
+                val body = call.receive<MessageReadRequest>()
+                messageController.markAsRead(
+                    chatId = body.chatId,
+                    messageIds = body.messageIds,
+                    userId = userId
+                )
+
+                call.respondSuccess(mapOf("ok" to true))
+            } catch (e: Exception) {
+                call.respondError(
+                    e.message ?: "Failed to mark messages as read",
+                    HttpStatusCode.BadRequest
+                )
+            }
+        }
+
+        get("/{chatId}/new") {
+            try {
+                val userId = call.requirePrincipalUserId()
+
+                val chatId = call.getPathParameter("chatId")?.toLongOrNull() ?: run {
+                    call.respondError(
+                        "Required parameter \"chatId\" must be integer",
+                        HttpStatusCode.BadRequest
+                    )
+                    return@get
+                }
+
+                call.respondSuccess(
+                    messageController.getNewMessages(chatId, userId),
+                    HttpStatusCode.OK
+                )
+            } catch (e: Exception) {
+                call.respondError(
+                    e.message ?: "Failed to get new messages",
+                    HttpStatusCode.InternalServerError
+                )
             }
         }
     }
