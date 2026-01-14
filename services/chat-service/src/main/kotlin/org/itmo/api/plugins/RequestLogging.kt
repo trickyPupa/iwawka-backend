@@ -1,8 +1,6 @@
 package org.itmo.api.plugins
 
 import io.ktor.server.application.*
-import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
 import io.ktor.server.plugins.origin
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -33,10 +31,6 @@ val RequestLoggingPlugin = createApplicationPlugin(
         val ipAddress = call.request.origin.remoteHost
         val userAgent = call.request.headers["User-Agent"]
 
-        val principal = call.principal<JWTPrincipal>()
-        val userId = principal?.payload?.getClaim("userId")?.asLong()
-        val username = principal?.payload?.getClaim("username")?.asString()
-
         val requestBody = if (logRequestBody && (call.request.contentLength() ?: 0) > 0) {
             try {
                 call.receiveText().take(1000) // Ограничиваем размер
@@ -55,8 +49,8 @@ val RequestLoggingPlugin = createApplicationPlugin(
                     uri = uri,
                     statusCode = statusCode,
                     duration = duration,
-                    userId = userId,
-                    username = username,
+                    userId = call.request.headers["X-User-Id"]?.toLongOrNull(),
+                    username = null,
                     ipAddress = ipAddress,
                     userAgent = userAgent,
                     requestBody = requestBody,
@@ -83,4 +77,3 @@ fun Application.configureRequestLogging(auditLogService: AuditLogService) {
         this.excludePaths = listOf("/health", "/metrics", "/swagger", "/openapi")
     }
 }
-

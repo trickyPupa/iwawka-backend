@@ -47,17 +47,9 @@ services:
       - clickhouse
     ports:
       - "8001:8001"
+    env_file:
+      - services/auth-service/.env
     environment:
-      DATABASE_POSTGRES_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-iwawka_db}
-      DATABASE_POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      DATABASE_POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      DATABASE_CLICKHOUSE_URL: jdbc:clickhouse://clickhouse:8123/${CLICKHOUSE_DB:-default}
-      DATABASE_CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
-      DATABASE_CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:- }
-      SERVER_HOST: 0.0.0.0
-      SERVER_PORT: 8001
-      FLYWAY_ENABLED: ${FLYWAY_ENABLED:-true}
-      FLYWAY_CLEAN_ON_ERROR: ${FLYWAY_CLEAN_ON_ERROR:-false}
       AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-iwawka}
       AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-iwawka-audience}
       AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-change-me-to-random-secret-in-production}
@@ -75,24 +67,9 @@ services:
       - clickhouse
     ports:
       - "8002:8002"
+    env_file:
+      - services/chat-service/.env
     environment:
-      DATABASE_POSTGRES_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-iwawka_db}
-      DATABASE_POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      DATABASE_POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      DATABASE_REDIS_HOST: redis
-      DATABASE_REDIS_PORT: 6379
-      DATABASE_CLICKHOUSE_URL: jdbc:clickhouse://clickhouse:8123/${CLICKHOUSE_DB:-default}
-      DATABASE_CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
-      DATABASE_CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:- }
-      SERVER_HOST: 0.0.0.0
-      SERVER_PORT: 8002
-      FLYWAY_ENABLED: ${FLYWAY_ENABLED:-true}
-      FLYWAY_CLEAN_ON_ERROR: ${FLYWAY_CLEAN_ON_ERROR:-false}
-      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-iwawka}
-      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-iwawka-audience}
-      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-change-me-to-random-secret-in-production}
-      AUTH_JWT_ACCESS_TTL_MINUTES: ${AUTH_JWT_ACCESS_TTL_MINUTES:-15}
-      AUTH_JWT_REFRESH_TTL_DAYS: ${AUTH_JWT_REFRESH_TTL_DAYS:-30}
       GIGACHAT_API_KEY: ${GIGACHAT_API_KEY:- }
 
   nginx:
@@ -111,4 +88,3 @@ volumes:
   pgdata:
   redisdata:
   chdata:
-

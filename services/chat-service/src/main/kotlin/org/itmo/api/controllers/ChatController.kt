@@ -2,15 +2,16 @@ package org.itmo.api.controllers
 
 import org.itmo.model.Chat
 import org.itmo.repository.ChatRepository
+import org.itmo.service.user.UserService
 
-class ChatController(private val chatRepository: ChatRepository) {
+class ChatController(
+    private val chatRepository: ChatRepository,
+    private val userService: UserService
+) {
 
     fun createChat(chatName: String, memberIds: List<Long>): Long {
         val chatId = chatRepository.createChat(chatName)
-        var success = true
-        for (memberId in memberIds) {
-            success = success && chatRepository.addUserToChat(chatId, memberId)
-        }
+        memberIds.forEach { chatRepository.addUserToChat(chatId, it) }
         return chatId
     }
 
@@ -19,10 +20,18 @@ class ChatController(private val chatRepository: ChatRepository) {
     }
 
     fun addUsers(chatId: Long, userIds: List<Long>): Boolean {
-        var success = true
-        for (memberId in userIds) {
-            success = success && chatRepository.addUserToChat(chatId, memberId)
+        userIds.forEach { chatRepository.addUserToChat(chatId, it) }
+        return true
+    }
+
+    fun getAllChatsEnriched(): Map<String, Any> {
+        val chats = chatRepository.getAllChats()
+        val items = chats.map { chat ->
+            mapOf(
+                "id" to chat.id,
+                "name" to chat.name
+            )
         }
-        return success
+        return mapOf("chats" to items)
     }
 }

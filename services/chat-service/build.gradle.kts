@@ -34,11 +34,7 @@ dependencies {
     implementation("io.ktor:ktor-client-cio")
     implementation("io.ktor:ktor-serialization-kotlinx-json")
     implementation("io.ktor:ktor-client-content-negotiation")
-
-    implementation("io.ktor:ktor-server-auth")
-    implementation("io.ktor:ktor-server-auth-jwt")
-    implementation("com.auth0:java-jwt:4.4.0")
-    implementation("org.mindrot:jbcrypt:0.4")
+    implementation("io.ktor:ktor-client-jackson")
 
     implementation("ch.qos.logback:logback-classic:$logback_version")
 

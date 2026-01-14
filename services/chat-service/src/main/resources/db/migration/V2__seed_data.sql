@@ -1,5 +1,5 @@
-INSERT INTO users (username, email, bio, password_hash)
-VALUES ('user1', 'email@mail.ru', 'empty', '123');
+INSERT INTO users (username, email, bio)
+VALUES ('user1', 'email@mail.ru', 'empty');
 
 INSERT INTO chats (name)
 VALUES ('fisrt chat');

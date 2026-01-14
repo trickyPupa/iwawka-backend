@@ -1,7 +1,6 @@
 package org.itmo.api.controllers
 
 import io.ktor.http.*
-import io.ktor.server.auth.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.itmo.api.getPrincipalUserId
@@ -16,7 +15,6 @@ import java.time.temporal.ChronoUnit
 fun Route.auditLogRoutes(auditLogService: AuditLogService) {
 
     route("/audit") {
-        authenticate("auth-jwt") {
 
             /**
              * GET /api/audit/logs
@@ -144,7 +142,5 @@ fun Route.auditLogRoutes(auditLogService: AuditLogService) {
                     ))
                 }
             }
-        }
     }
 }
-

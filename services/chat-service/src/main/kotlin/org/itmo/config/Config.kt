@@ -26,12 +26,14 @@ object Config {
     val flywayEnabled: Boolean = config.getBoolean("flyway.enabled")
     val flywayLocations: List<String> = config.getStringList("flyway.locations")
 
-    val authJwtIssuer: String = string("auth.jwt.issuer")
-    val authJwtAudience: String = string("auth.jwt.audience")
-    val authJwtSecret: String = string("auth.jwt.secret")
-    val authJwtAccessTtlMinutes: Long = long("auth.jwt.accessTtlMinutes")
-    val authJwtRefreshTtlDays: Long = long("auth.jwt.refreshTtlDays")
+//    val authJwtIssuer: String = string("auth.jwt.issuer")
+//    val authJwtAudience: String = string("auth.jwt.audience")
+//    val authJwtSecret: String = string("auth.jwt.secret")
+//    val authJwtAccessTtlMinutes: Long = long("auth.jwt.accessTtlMinutes")
+//    val authJwtRefreshTtlDays: Long = long("auth.jwt.refreshTtlDays")
 
-    val gigachatAuthKey: String = string("gigachat.authkey")
-    val gigachatModel: String = string("gigachat.model")
+    val gigachatAuthKey: String = string("service.gigachat.authkey")
+    val gigachatModel: String = string("service.gigachat.model")
+
+    val authServiceUrl: String = string("service.auth.baseurl")
 }

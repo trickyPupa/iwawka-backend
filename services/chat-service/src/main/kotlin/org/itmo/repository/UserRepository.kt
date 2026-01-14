@@ -252,3 +252,4 @@ class UserRepository(private val postgresClient: PostgresClient) {
         }
     }
 }
+

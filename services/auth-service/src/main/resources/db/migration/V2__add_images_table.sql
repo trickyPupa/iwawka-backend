@@ -11,4 +11,3 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS image_id BIGINT REFERENCES images(id)
 
 CREATE INDEX IF NOT EXISTS idx_images_uploaded_by ON images(uploaded_by);
 CREATE INDEX IF NOT EXISTS idx_users_image_id ON users(image_id);
-

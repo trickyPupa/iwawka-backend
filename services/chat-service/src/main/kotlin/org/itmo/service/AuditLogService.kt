@@ -1,8 +1,6 @@
 package org.itmo.service
 
 import io.ktor.server.application.*
-import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
 import io.ktor.server.request.*
 import org.itmo.api.getPrincipalUserId
 import org.itmo.model.*
@@ -166,4 +164,3 @@ suspend fun ApplicationCall.logAudit(
         println("⚠️ Failed to log audit action: ${e.message}")
     }
 }
-

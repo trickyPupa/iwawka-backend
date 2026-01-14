@@ -4,11 +4,7 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
-import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
-import org.itmo.model.User
 import org.itmo.repository.ChatRepository
-import org.itmo.repository.UserRepository
 import org.slf4j.LoggerFactory
 
 data class ApiResponse<T>(
@@ -40,24 +36,18 @@ fun ApplicationCall.getAuthToken(): String? {
 }
 
 fun ApplicationCall.getPrincipalUserId(): Long? {
-    val principal = principal<JWTPrincipal>()
-    return principal?.getClaim("sub", String::class)?.toLongOrNull()
+    return request.header("X-User-Id")?.toLongOrNull()
 }
 
 fun ApplicationCall.requirePrincipalUserId(): Long {
-    return getPrincipalUserId() 
-        ?: throw IllegalStateException("User ID not found in JWT token")
+    return getPrincipalUserId()
+        ?: throw IllegalStateException("User ID not found in request headers")
 }
 
-suspend fun ApplicationCall.requireAuth(userRepository: UserRepository): User {
-    val userId = getPrincipalUserId()
-        ?: throw IllegalArgumentException("Unauthorized")
-    
-    return userRepository.getUserById(userId)
-        ?: throw IllegalArgumentException("User not found")
+suspend fun ApplicationCall.requireAuth(): Long {
+    return getPrincipalUserId() ?: throw IllegalArgumentException("Unauthorized")
 }
 
-suspend fun ApplicationCall.getCurrentUser(userRepository: UserRepository): User? {
-    val userId = getPrincipalUserId() ?: return null
-    return userRepository.getUserById(userId)
+suspend fun ApplicationCall.getCurrentUserId(): Long? {
+    return getPrincipalUserId()
 }

@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
-import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.*
@@ -17,12 +15,12 @@ import io.ktor.server.response.*
 import org.slf4j.event.Level
 import org.flywaydb.core.Flyway
 import org.itmo.config.Config
-import org.itmo.config.JwtConfig
 import org.itmo.api.configureRouting
 import org.itmo.api.controllers.*
 import org.itmo.api.plugins.configureRequestLogging
 import org.itmo.repository.*
 import org.itmo.service.*
+import org.itmo.service.user.*
 import org.itmo.db.*
 
 fun main() {
@@ -30,7 +28,6 @@ fun main() {
         runMigrations()
     }
 
-    // Инициализация таблиц ClickHouse
     try {
         println("=== Initializing ClickHouse ===")
         ClickHouseConnection.initializeTables()
@@ -45,7 +42,7 @@ fun main() {
 }
 
 fun runMigrations() {
-    val maxRetries = 5
+    val maxRetries = 3
     var retries = 0
     var lastException: Exception? = null
     val cleanOnError = System.getenv("FLYWAY_CLEAN_ON_ERROR")?.toBoolean() ?: false
@@ -223,33 +220,6 @@ fun Application.module() {
         }
     }
 
-    install(Authentication) {
-        jwt("auth-jwt") {
-            verifier(JwtConfig.verifier)
-            realm = Config.authJwtIssuer
-
-            validate { credential ->
-                // Проверяем, что токен содержит subject и audience
-                if (credential.payload.subject != null &&
-                    credential.payload.audience.contains(Config.authJwtAudience)) {
-                    JWTPrincipal(credential.payload)
-                } else {
-                    null
-                }
-            }
-
-            challenge { _, _ ->
-                call.respond(
-                    HttpStatusCode.Unauthorized,
-                    mapOf(
-                        "success" to false,
-                        "error" to "Invalid token"
-                    )
-                )
-            }
-        }
-    }
-
     install(StatusPages) {
         exception<Throwable> { call, cause ->
             call.respond(HttpStatusCode.InternalServerError, cause.localizedMessage)
@@ -270,13 +240,17 @@ fun Application.module() {
     val messageRepository = MessageRepository(postgresClient)
     val chatRepository = ChatRepository(postgresClient)
 
+    val userCache = UserCache(redisClient)
+    val userClient = UserClient(Config.authServiceUrl)
+    val userService = UserService(userClient, userCache)
+
     val messageService = MessageService(messageRepository)
     val auditLogService = AuditLogService()
     val aiService = AiService(Config.gigachatAuthKey, redisClient)
 
 
-    val messageController = MessageController(messageService)
-    val chatController = ChatController(chatRepository)
+    val messageController = MessageController(messageService, userService)
+    val chatController = ChatController(chatRepository, userService)
     val testController = LoadTestController(messageService)
     val aiController = AiController(aiService, messageService)
 

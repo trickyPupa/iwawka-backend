@@ -33,7 +33,6 @@ fun Route.authRoutes(authController: AuthController, auditLogService: AuditLogSe
                 val jwt = JwtConfig.verifier.verify(token)
                 val userId = jwt.subject
 
-                // Возвращаем успешный ответ с заголовком X-User-Id для nginx
                 call.response.header("X-User-Id", userId)
                 call.respond(HttpStatusCode.OK, mapOf("valid" to true, "userId" to userId))
             } catch (_: Exception) {
