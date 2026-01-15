@@ -8,7 +8,6 @@ import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 import org.itmo.model.User
 import org.itmo.repository.UserRepository
-import org.slf4j.LoggerFactory
 
 data class ApiResponse<T>(
     val success: Boolean,

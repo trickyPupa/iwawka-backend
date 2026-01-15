@@ -11,6 +11,7 @@ import org.itmo.api.getPrincipalUserId
 import org.itmo.api.request.LoginRequest
 import org.itmo.api.request.RefreshRequest
 import org.itmo.api.request.RegisterRequest
+import org.itmo.api.respondSuccess
 import org.itmo.config.JwtConfig
 import org.itmo.model.AuditAction
 import org.itmo.service.AuditLogService
@@ -62,7 +63,7 @@ fun Route.authRoutes(authController: AuthController, auditLogService: AuditLogSe
                     }
                 }
 
-                call.respond(HttpStatusCode.Created, response)
+                call.respondSuccess(response)
             } catch (e: Exception) {
                 // Логирование неудачной регистрации
                 auditLogService?.let { service ->
@@ -109,7 +110,7 @@ fun Route.authRoutes(authController: AuthController, auditLogService: AuditLogSe
                     }
                 }
 
-                call.respond(HttpStatusCode.OK, response)
+                call.respondSuccess(response)
             } catch (e: Exception) {
                 // Логирование неудачной попытки входа
                 auditLogService?.let { service ->
@@ -153,7 +154,7 @@ fun Route.authRoutes(authController: AuthController, auditLogService: AuditLogSe
                         }
                     }
 
-                    call.respond(HttpStatusCode.OK, response)
+                    call.respondSuccess(response)
                 } catch (e: Exception) {
                     val userId = call.getPrincipalUserId()
                     val username = null
@@ -196,7 +197,7 @@ fun Route.authRoutes(authController: AuthController, auditLogService: AuditLogSe
                         }
                     }
 
-                    call.respond(HttpStatusCode.OK, mapOf("message" to "Logged out successfully"))
+                    call.respondSuccess(mapOf("message" to "Logged out successfully"))
                 } catch (e: Exception) {
                     call.respond(HttpStatusCode.BadRequest, mapOf("error" to e.message))
                 }

@@ -13,6 +13,7 @@ import org.itmo.api.getPathParameter
 import org.itmo.api.respondError
 import org.itmo.api.respondSuccess
 import org.itmo.api.request.UserUpdateRequest
+import org.itmo.api.getPrincipalUserId
 
 fun Route.userRoutes(userController: UserController) {
     authenticate("auth-jwt") {
@@ -21,6 +22,20 @@ fun Route.userRoutes(userController: UserController) {
                 try {
                     val users = userController.getAllUsers()
                     call.respondSuccess(users)
+                } catch (e: Exception) {
+                    call.respondError(e.message ?: "",HttpStatusCode.BadRequest)
+                }
+            }
+
+            get("/me") {
+                try {
+                    val userId = call.getPrincipalUserId() ?: run {
+                        call.respondError("Unauthorized", HttpStatusCode.Unauthorized)
+                        return@get
+                    }
+
+                    val user = userController.getUserById(userId)
+                    call.respondSuccess(user)
                 } catch (e: Exception) {
                     call.respondError(e.message ?: "",HttpStatusCode.BadRequest)
                 }

@@ -1,7 +1,7 @@
 FROM gradle:9.2-jdk21 AS build
 WORKDIR /app
 COPY . .
-RUN ./gradlew :chat-service:installDist --no-daemon
+RUN gradle :chat-service:installDist --no-daemon
 
 FROM eclipse-temurin:21-jre
 WORKDIR /opt/iwawka

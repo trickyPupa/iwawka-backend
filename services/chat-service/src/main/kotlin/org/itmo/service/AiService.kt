@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.accept
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -25,9 +26,11 @@ class AiService(
     private val apiKey: String,
     private val redisClient: RedisClient
 ) {
-    private val apiUrl = "https://gigachat.devices.sberbank.ru/"
+//    private val apiUrl = "https://gigachat.devices.sberbank.ru/"
+    private val apiUrl = "http://172.20.10.5:8000/"
 //    private val authUrl = "api/v2/oauth"
-    private val summarizeUrl = "api/v1/chat/completions"
+//    private val summarizeUrl = "api/v1/chat/completions"
+    private val summarizeUrl = "api/summarize"
     private val authTokenKey = "ai_access_token"
 
     private val authUrl = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
@@ -114,6 +117,20 @@ class AiService(
             ?: "Не удалось создать суммаризацию"
     }
 
+    suspend fun summarizeJson(json: String): String {
+        val a = client.post(apiUrl + summarizeUrl) {
+            contentType(ContentType.Application.Json)
+            setBody(json)
+            timeout {
+                connectTimeoutMillis = 100000
+                requestTimeoutMillis = 100000
+            }
+        }
+        val response: ArtyomChatResponse = a.body()
+
+        return response.summary
+    }
+
     fun close() {
         client.close()
     }
@@ -151,4 +168,9 @@ data class AuthResponse(
 @Serializable
 data class Choice(
     val message: Message
+)
+
+@Serializable
+data class ArtyomChatResponse(
+    val summary: String
 )
