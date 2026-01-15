@@ -2,10 +2,7 @@ package org.itmo.repository
 
 import org.itmo.db.PostgresClient
 import org.itmo.model.Chat
-import org.itmo.model.User
 import org.slf4j.LoggerFactory
-import java.sql.Timestamp
-import java.time.Instant
 import kotlin.use
 
 class ChatRepository(private val postgresClient: PostgresClient) {
