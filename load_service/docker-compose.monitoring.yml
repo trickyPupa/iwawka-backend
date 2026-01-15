@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: iwawka-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - iwawka-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: iwawka-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-k6-app
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
+      - ./grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+    depends_on:
+      - prometheus
+    networks:
+      - iwawka-network
+
+  k6-load-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: iwawka-k6-load
+    tty: true
+    stdin_open: true
+    environment:
+      # Параметры нагрузки
+      - STAGE_DURATION=${STAGE_DURATION:-1m}
+      - STAGE_START_RPS=${STAGE_START_RPS:-50}
+      - STAGE_STEP_RPS=${STAGE_STEP_RPS:-50}
+      - STAGE_STEPS=${STAGE_STEPS:-5}
+      - MAX_VUS=${MAX_VUS:-200}
+      - THINK=${THINK:-0.5}
+      # Вероятности действий
+      - P_SEND=${P_SEND:-0.5}
+      - P_READ=${P_READ:-0.3}
+      - P_NEW=${P_NEW:-0.2}
+    networks:
+      - iwawka-network
+    depends_on:
+      - prometheus
+    profiles:
+      - load-test
+
+networks:
+  iwawka-network:
+    external: true
+    name: iwawka-backend_default
+
+volumes:
+  prometheus_data:
+  grafana_data:
+

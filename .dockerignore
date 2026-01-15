@@ -36,6 +36,4 @@ Thumbs.db
 *.md
 !README.md
 
-# Scripts (if not needed in container)
-scripts
-
+load_service
