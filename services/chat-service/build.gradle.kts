@@ -1,6 +1,7 @@
 val kotlin_version: String by project
 val logback_version: String by project
 val postgres_version: String by project
+val micrometer_version: String by project
 
 plugins {
     kotlin("jvm")
@@ -50,6 +51,10 @@ dependencies {
     implementation("org.flywaydb:flyway-core:10.15.0")
     implementation("org.flywaydb:flyway-database-postgresql:10.15.0")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2")
+
+    implementation("io.ktor:ktor-server-metrics-micrometer")
+    implementation("io.micrometer:micrometer-core:$micrometer_version")
+    implementation("io.micrometer:micrometer-registry-prometheus:$micrometer_version")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("io.mockk:mockk:1.13.8")

@@ -1,0 +1,106 @@
+{
+  "dashboard": {
+    "title": "Iwawka Load Test - Performance",
+    "tags": ["k6", "load-test", "iwawka"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Requests per Second",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "sum(rate(ktor_http_server_requests_seconds_count{job=\"chat-service\"}[1m]))",
+            "legendFormat": "Total RPS",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Response Time (p50, p95, p99)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "ktor_http_server_requests_seconds{quantile=\"0.5\"} * 1000",
+            "legendFormat": "p50",
+            "refId": "A"
+          },
+          {
+            "expr": "ktor_http_server_requests_seconds{quantile=\"0.95\"} * 1000",
+            "legendFormat": "p95",
+            "refId": "B"
+          },
+          {
+            "expr": "ktor_http_server_requests_seconds{quantile=\"0.99\"} * 1000",
+            "legendFormat": "p99",
+            "refId": "C"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Error Rate %",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "sum(rate(ktor_http_server_requests_seconds_count{status=~\"5..\"}[1m])) / sum(rate(ktor_http_server_requests_seconds_count[1m])) * 100",
+            "legendFormat": "5xx errors",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Active Requests",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "ktor_http_server_requests_active",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "JVM Heap Memory Usage",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "sum(jvm_memory_used_bytes{area=\"heap\"}) / 1024 / 1024",
+            "legendFormat": "Used (MB)",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(jvm_memory_max_bytes{area=\"heap\"}) / 1024 / 1024",
+            "legendFormat": "Max (MB)",
+            "refId": "B"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "GC Pause Time",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+        "targets": [
+          {
+            "expr": "rate(jvm_gc_pause_seconds_sum[1m]) * 1000",
+            "legendFormat": "GC Pause (ms/sec)",
+            "refId": "A"
+          }
+        ]
+      }
+    ],
+    "refresh": "5s",
+    "schemaVersion": 27,
+    "version": 1
+  },
+  "overwrite": true
+}
+

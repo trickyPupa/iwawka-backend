@@ -12,6 +12,9 @@ import io.ktor.server.plugins.calllogging.*
 import io.ktor.server.request.*
 import io.ktor.http.*
 import io.ktor.server.response.*
+import io.ktor.server.metrics.micrometer.*
+import io.micrometer.prometheus.PrometheusConfig
+import io.micrometer.prometheus.PrometheusMeterRegistry
 import org.slf4j.event.Level
 import org.flywaydb.core.Flyway
 import org.itmo.config.Config
@@ -248,6 +251,19 @@ fun Application.module() {
     val auditLogService = AuditLogService()
     val aiService = AiService(Config.gigachatAuthKey, redisClient)
 
+    val prometheusRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+    install(MicrometerMetrics) {
+        registry = prometheusRegistry
+
+        timers { call, exception ->
+            tag("method", call.request.httpMethod.value)
+            tag("route", call.request.path())
+            tag("status", call.response.status()?.value?.toString() ?: "unknown")
+            exception?.let {
+                tag("exception", it::class.simpleName ?: "unknown")
+            }
+        }
+    }
 
     val messageController = MessageController(messageService, userService)
     val chatController = ChatController(chatRepository, userService)
@@ -257,5 +273,5 @@ fun Application.module() {
     configureRequestLogging(auditLogService)
 
     configureRouting(messageController, chatController, auditLogService,
-        testController, aiController)
+        testController, aiController, prometheusRegistry)
 }

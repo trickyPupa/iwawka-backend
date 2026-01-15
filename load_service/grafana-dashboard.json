@@ -1,0 +1,59 @@
+{
+  "dashboard": {
+    "title": "Iwawka Chat Service Performance",
+    "panels": [
+      {
+        "title": "Requests per Second",
+        "targets": [
+          {
+            "expr": "rate(http_server_requests_seconds_count{job=\"chat-service\"}[1m])"
+          }
+        ]
+      },
+      {
+        "title": "Request Latency (p95)",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{job=\"chat-service\"}[1m]))"
+          }
+        ]
+      },
+      {
+        "title": "Error Rate",
+        "targets": [
+          {
+            "expr": "rate(http_server_requests_seconds_count{job=\"chat-service\",status=~\"5..\"}[1m])"
+          }
+        ]
+      },
+      {
+        "title": "JVM Memory Usage",
+        "targets": [
+          {
+            "expr": "jvm_memory_used_bytes{job=\"chat-service\",area=\"heap\"}"
+          }
+        ]
+      },
+      {
+        "title": "Database Connection Pool",
+        "targets": [
+          {
+            "expr": "hikaricp_connections_active{job=\"chat-service\"}"
+          },
+          {
+            "expr": "hikaricp_connections_idle{job=\"chat-service\"}"
+          }
+        ]
+      },
+      {
+        "title": "GC Pause Time",
+        "targets": [
+          {
+            "expr": "rate(jvm_gc_pause_seconds_sum{job=\"chat-service\"}[1m])"
+          }
+        ]
+      }
+    ]
+  }
+}
+
