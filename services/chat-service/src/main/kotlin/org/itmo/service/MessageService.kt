@@ -24,4 +24,16 @@ class MessageService(private val resource: MessageRepository) {
     fun getByIds(ids: List<Long>): List<Message> {
         return resource.getMessagesByIds(ids)
     }
+
+    fun markAsRead(chatId: Long, messageIds: List<Long>, userId: Long) {
+        resource.markMessagesAsRead(chatId, messageIds, userId)
+    }
+
+    fun getNewMessages(chatId: Long, userId: Long): List<Message> {
+        return resource.getNewMessages(chatId, userId)
+    }
+
+    fun markAsReadUpTo(chatId: Long, messageId: Long, userId: Long) {
+        resource.markMessagesAsReadUpTo(chatId, messageId, userId)
+    }
 }
